@@ -2,9 +2,11 @@
   "name": "random-commander",
   "version": "0.1.0",
   "private": true,
+  "main": "main.js",
   "scripts": {
     "serve": "vue-cli-service serve",
-    "build": "vue-cli-service build"
+    "build": "vue-cli-service build",
+    "start": "node index.js"
   },
   "dependencies": {
     "axios": "^0.21.0",
