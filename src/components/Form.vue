@@ -2,8 +2,13 @@
   <div class="hello">
     <h1>{{ msg }}</h1>
     <img :data-src="imageUrl" :src="imageUrl" class="commander-image" />
-    <p>{{ name }}</p>
+    <h3>Deck Name : {{ name }}</h3>
     <button v-on:click="rollDeck">Roll</button>
+    <div class="cards-container">
+      <div v-for="card in cards" :key="card">
+      <img :data-src=card :src=card class="card" />
+      </div>
+    </div>
   </div>
 </template>
 
@@ -19,7 +24,8 @@ export default {
   data() {
     return {
       name: "",
-      imageUrl: ""
+      imageUrl: "",
+      cards: []
     };
   },
   methods: {
@@ -33,9 +39,9 @@ export default {
         .then((response) => {
           console.log(response);
           var imageId = response.data.data.commander[0].identifiers.scryfallId;
+          instance.cards = response.data.data.mainBoard.map(item => "https://api.scryfall.com/cards/" + item.identifiers.scryfallId + "?format=image")
           instance.imageUrl = "https://api.scryfall.com/cards/" + imageId + "?format=image";
         });
-      console.log(deck);
     },
   },
   mounted() {
@@ -52,6 +58,13 @@ export default {
 <style scoped>
 .commander-image {
   width: 300px;
+}
+.cards-container {
+  display: flex; /* or inline-flex */
+  flex-flow: row wrap;
+}
+.card {
+  width: 200px;
 }
 h3 {
   margin: 40px 0 0;
