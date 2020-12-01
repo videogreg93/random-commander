@@ -2,12 +2,31 @@
   <div class="hello">
     <h1>{{ msg }}</h1>
     <img :data-src="imageUrl" :src="imageUrl" class="commander-image" />
-    <h3>Deck Name : {{ name }}</h3>
-    <button v-on:click="rollDeck">Roll</button>
-    <button v-if="name" v-clipboard="copyDecklist">Copy decklist to clipboard</button>
+    <h3 v-if="name">Deck Name : {{ name }}</h3>
+    <button v-on:click="rollDeck" :disabled="enabledTypes.length === 0">Roll</button>
+    <button v-if="name" v-clipboard="copyDecklist">
+      Copy decklist to clipboard
+    </button>
+    <h3>Filters</h3>
+    <div class="type-container">
+      <div v-for="type in allTypes" :key="type" class="type">
+        <input
+          type="checkbox"
+          :id="type"
+          :name="type"
+          :value="type"
+          v-model="enabledTypes"
+        />
+        <label :for="type">{{ type }}</label>
+      </div>
+    </div>
+
+    <button v-on:click="selectAll">Select All</button>
+    <button v-on:click="selectNone">Select None</button>
+    <h3 v-if="decklist">Cards</h3>
     <div class="cards-container">
       <div v-for="card in cards" :key="card">
-      <img :data-src=card :src=card class="card" />
+        <img :data-src="card" :src="card" class="card" />
       </div>
     </div>
   </div>
@@ -27,14 +46,20 @@ export default {
       name: null, // Commander deck name
       imageUrl: "", // Commander image url
       cards: [], //Card Images
-      decklist: null // Cardlist for importing
+      decklist: null, // Cardlist for importing,
+      allTypes: [],
+      enabledTypes: [],
+      commanderDecks: null,
     };
   },
   methods: {
     rollDeck: function () {
-      const random = Math.floor(Math.random() * this.commanderDecks.length);
-      var deck = this.commanderDecks[random];
-      this.name = this.commanderDecks[random].name;
+      var actualDecks = this.commanderDecks.filter((item) =>
+        this.enabledTypes.includes(item.code)
+      );
+      const random = Math.floor(Math.random() * actualDecks.length);
+      var deck = actualDecks[random];
+      this.name = actualDecks[random].name;
       var instance = this;
       axios
         .get("https://mtgjson.com/api/v5/decks/" + deck.fileName + ".json")
@@ -42,37 +67,67 @@ export default {
           console.log(response);
           var commander = response.data.data.commander[0];
           var imageId = commander.identifiers.scryfallId;
-          instance.cards = response.data.data.mainBoard.map(item => "https://api.scryfall.com/cards/" + item.identifiers.scryfallId + "?format=image")
-          instance.imageUrl = "https://api.scryfall.com/cards/" + imageId + "?format=image";
+          instance.cards = response.data.data.mainBoard.map(
+            (item) =>
+              "https://api.scryfall.com/cards/" +
+              item.identifiers.scryfallId +
+              "?format=image"
+          );
+          instance.imageUrl =
+            "https://api.scryfall.com/cards/" + imageId + "?format=image";
           instance.decklist = "1 " + commander.name + "\n";
           response.data.data.mainBoard.forEach((item) => {
             instance.decklist += item.count + " " + item.name + "\n";
           });
-          //instance.decklist = response.data.data.mainBoard.map(item => item.count + " " + item.name);
         });
     },
     copyDecklist: function () {
       return this.decklist;
-    }
+    },
+    selectAll: function () {
+      this.enabledTypes.length = 0;
+      this.allTypes.forEach((element) => {
+        this.enabledTypes.push(element);
+      });
+    },
+    selectNone: function () {
+      this.enabledTypes = []; // Removes all items from the array
+    },
   },
   mounted() {
     this.commanderDecks = Decklist["data"].filter((deck) =>
       deck.type.includes("Commander")
     );
-
-    console.log(this.commanderDecks);
+    this.allTypes = new Set(this.commanderDecks.map((item) => item.code));
+    this.allTypes.forEach((element) => {
+      this.enabledTypes.push(element);
+    });
   },
 };
 </script>
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
+button {
+  margin: 5px;
+}
+.type-container {
+  display: flex; /* or inline-flex */
+  flex-flow: row wrap;
+  align-items: center;
+  justify-content: center;
+}
+.type {
+  margin: 10px;
+}
 .commander-image {
   width: 300px;
 }
 .cards-container {
   display: flex; /* or inline-flex */
   flex-flow: row wrap;
+  align-items: center;
+  justify-content: center;
 }
 .card {
   width: 200px;
